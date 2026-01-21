@@ -1,94 +1,101 @@
-import streamlit as st 
+import streamlit as st
+import pohon  # Memanggil file styles.py
 
-#Judul
-st.title ("STUS NYAWIT NIH ORANG")
+# 1. Konfigurasi Halaman
+st.set_page_config(page_title=" 🌴 SELAMAT DATANG DI SAWIT TOTO 🌴 ", layout="wide")
 
-#gambar_web
-st.image("https://originalhome.nl/wp-content/uploads/2021/08/RSPO-logo.png",caption="Tersertifikasi Sawit Premium")
+# Memuat CSS
+pohon.load_css()
 
-#h1
-st.header("SELAMAT DATANG")
+# --- DATA DUMMY (6 JENIS SAWIT) ---
+data_sawit = [
+    {"nama": "Sawit Manis", "ways": "1 in 100 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
+    {"nama": "Sawit Besar", "ways": "1 in 1000 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
+    {"nama": "Sawit Peri", "ways": "1 in 10000 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
+    {"nama": "Sawit Brondolan", "ways": "1 in 10 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},   
+    {"nama": "Sawit Premium", "ways": "1 in 2000 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
+    {"nama": "Sawit Tung Tung", "ways": "1 in 200 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"}
+]
 
-#deskrippsi
-st.write("ANDA NYAWIT, KAMI DAPET DUIT")
+# --- INISIALISASI SESSION STATE ---
+if 'status_login' not in st.session_state:
+    st.session_state['status_login'] = False
+if 'nama_user' not in st.session_state:
+    st.session_state['nama_user'] = "" # Siapkan wadah kosong untuk nama
 
-#sidebar
-st.sidebar.title("PILIH SAWIT TERBAIK AGAN")
-st.sidebar.selectbox("SAWIT TERSEDIA: ",["Sawit Manis","Sawit Besar","Sawit Brondolan"]) #pilihan sidebar
-
-#Judul
-#st.title("Macam-Macam Sawit yang Tersedia")
-
-#tabulasi
-#tab1, tab2 = st.tabs(["Menu 1", "Menu 2"])
-#tab1.write("Isi konten Menu 1 di sini")
-#tab2.write("Isi konten Menu 2 di sini")
-
-#tombol
-if st.title("Pilih Sawit"):
+# --- HALAMAN LOGIN ---
+def login_page():
+    # Menggunakan class CSS dari styles.py
+    st.markdown('<h1 class="judul-login">DAFTAR SEKARANG!</h1>', unsafe_allow_html=True)
     
-    #proggram_sidebar
-    col1, col2, col3=st.columns(3)
-    col1.write("Sawit Manis")
-    col2.write("Sawit Besar")
-    col3.write("Sawit Brondolan")
+    col1, col2, col3 = st.columns([1, 2, 1])
     
-    sawit = st.text_input("Pilih Sawit: ", placeholder="Masukkan Jenis Sawit")
-    if st.button("OK"):
-        if not sawit:
-            st.error("Agan Belum Memilih Sawit")
-        elif not (sawit.startswith ("Sawit Manis") or sawit.startswith ("Sawit Besar") or sawit.startswith ("Sawit Brondolan")):
-            st.error("Masukkan Jenis Sawit yang Valid!")
-        else:
-            st.success(f"Sawit yang agan pilih: {sawit}")
+    with col2:
+        with st.container(border=True):
+            username = st.text_input("Username", placeholder="Masukkan nama anda")
+            password = st.text_input("Password", type="password", placeholder="Masukkan password anda")
+            
+            if st.button("Masuk"):
+                # Validasi Input
+                if not username or not password:
+                    st.error("Kamu belum memasukkan nama atau password!")
+                elif len(password) < 8:
+                    st.error("Password terlalu pendek! Minimal 8 karakter.")
+                elif not any(char.isdigit() for char in password):
+                    st.error("Password harus mengandung setidaknya satu angka!")
+                else:
+                    # --- BAGIAN PENTING: MENYIMPAN DATA ---
+                    st.success("Login Berhasil!")
+                    st.session_state['status_login'] = True
+                    st.session_state['nama_user'] = username # Simpan nama input ke memori
+                    st.rerun()
 
-#pemanggil_css
-with open("pohon.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-#dashboard_pengguna
-st.metric(label="Total Penyawit",value="1000",delta="10%")
-
-#penyembunyi_konten
-with st.expander("Info Data Sawit Terikini"):
-
-#checkbox
-        st.checkbox("Lihat Semua Sawit")
+# --- HALAMAN UTAMA (SAWIT TOTO) ---
+def main_page():
+    # Ambil nama yang tersimpan di memori
+    nama_aktif = st.session_state['nama_user']
+    
+    # --- SIDEBAR (INFO PENGGUNA DINAMIS) ---
+    with st.sidebar:
+        st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100)
         
-#tabel_data
-        st.dataframe({"Sawit Manis": [11,21,13], "Sawit Besar": [14,2,34], "Sawit Brondolan": [110,320,34]})
+        # TAMPILKAN NAMA DARI INPUT USER
+        st.title(nama_aktif.upper()) # Ubah jadi huruf besar semua
+        st.write("**Status:** Member Baru")
+        
+        st.divider()
+        
+        st.metric(label="Saldo Dompet", value="Rp 0", delta="Belum Deposit")
+        
+        st.divider()
+        st.button("Deposit")
+        st.button("Riwayat Penarikan")
+        
+        if st.button("Log Out", type="primary"):
+            st.session_state['status_login'] = False
+            st.session_state['nama_user'] = "" # Kosongkan nama saat logout
+            st.rerun()
 
-#chart
-        st.line_chart([0,9,29,11,15,30,78,94,121])
+    # --- KONTEN UTAMA ---
+    st.title("🌴 SAWIT TOTO")
+    st.caption(f"Selamat datang, {nama_aktif}! Jangan Asal Pilih Sawit!")
 
-#slider
-        st.slider("Cek Harga",0,100)
+    col1, col2, col3 = st.columns(3)
+    cols = [col1, col2, col3]
 
-st.code("print('Hello World')", language='python')
+    for i, item in enumerate(data_sawit):
+        with cols[i % 3]:
+            with st.container(border=True):
+                st.image(item["img"], use_container_width=True)
+                st.subheader(item["nama"])
+                st.info(f"Ways: {item['ways']}")
+                if st.button(f"Pilih {item['nama']}", key=f"btn_{i}"):  
+                    st.toast(f"{nama_aktif} memilih: {item['nama']}")
 
-#menampilkan_kode        
-#st.json({"nama": "User", "role": "Developer", "status": "Active"})
+    st.divider()
 
-#pilih_banyak
-#st.multiselect("Pilih Skill", ["Python", "C++", "Java", "SQL"])
-
-#pilihan_langsung
-#st.radio("Pilih Kategori", ["Pilihan A", "Pilihan B", "Pilihan C"])
-
-#catatan
-#st.text_area("Catatan Tambahan", " ")
-
-#file_upload
-#st.file_uploader("Upload Data Diri Anda")
-
-#file_dwonload
-#st.download_button("Unduh File", "Hai", file_name="Laporan Sawit.txt")
-
-#tanggal
-#st.date_input("Tanggal Hari ini: ")
-
-#warna
-#st.color_picker("Pilih Warna: ","#12f1d0")
-
-#bar
-#st.progress()
+# --- LOGIKA KONTROL UTAMA ---
+if st.session_state['status_login'] == False:
+    login_page()
+else:
+    main_page()
