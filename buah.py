@@ -1,33 +1,242 @@
 import streamlit as st
-import pohon  # Memanggil file styles.py
+import random
+import time
+import pohon
 
 # 1. Konfigurasi Halaman
-st.set_page_config(page_title=" 🌴 SELAMAT DATANG DI SAWIT TOTO 🌴 ", layout="wide")
+st.set_page_config(page_title="🌴 SAWIT TOTO 🌴", layout="wide")
 
 # Memuat CSS
 pohon.load_css()
 
-# --- DATA DUMMY (6 JENIS SAWIT) ---
+# --- DATA DUMMY ---
 data_sawit = [
-    {"nama": "Sawit Manis", "ways": "1 in 100 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
-    {"nama": "Sawit Besar", "ways": "1 in 1000 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
-    {"nama": "Sawit Peri", "ways": "1 in 10000 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
-    {"nama": "Sawit Brondolan", "ways": "1 in 10 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},   
-    {"nama": "Sawit Premium", "ways": "1 in 2000 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
-    {"nama": "Sawit Tung Tung", "ways": "1 in 200 ", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"}
+    {"nama": "Sawit Manis", "ways": "1 in 100", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
+    {"nama": "Sawit Besar", "ways": "1 in 1000", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
+    {"nama": "Sawit Peri", "ways": "1 in 10000", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
+    {"nama": "Sawit Brondolan", "ways": "1 in 10", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},   
+    {"nama": "Sawit Premium", "ways": "1 in 2000", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"},
+    {"nama": "Sawit Tung Tung", "ways": "1 in 200", "img": "https://srs-ssms.com/wp-content/uploads/DSC_0140-1140x640.jpg"}
 ]
 
 # --- INISIALISASI SESSION STATE ---
 if 'status_login' not in st.session_state:
     st.session_state['status_login'] = False
 if 'nama_user' not in st.session_state:
-    st.session_state['nama_user'] = "" # Siapkan wadah kosong untuk nama
+    st.session_state['nama_user'] = ""
+if 'current_page' not in st.session_state:
+    st.session_state['current_page'] = "dashboard"
 
-# --- HALAMAN LOGIN ---
-def login_page():
-    # Menggunakan class CSS dari styles.py
-    st.markdown('<h1 class="judul-login">DAFTAR SEKARANG!</h1>', unsafe_allow_html=True)
+# --- STATE BARU: SALDO & EKONOMI ---
+if 'saldo_user' not in st.session_state:
+    st.session_state['saldo_user'] = 0 
+if 'deposit_mode' not in st.session_state:
+    st.session_state['deposit_mode'] = False 
+
+# --- FUNGSI FORMAT RUPIAH ---
+def format_rupiah(angka):
+    return f"Rp {angka:,.0f}".replace(",", ".")
+
+# --- FUNGSI: HITUNG HADIAH (SISTEM TIER) ---
+def hitung_kemenangan(simbol):
+    if simbol == "🌴":
+        return 20000
+    elif simbol in ["💎", "7️⃣"]:
+        return 5000
+    elif simbol in ["💰", "🚛"]:
+        return 2500
+    else: # Cherry
+        return 1500
+
+# --- FUNGSI: HALAMAN DEPOSIT ---
+def deposit_interface():
+    st.markdown("### Isi Saldo Kamu!")
     
+    with st.form("form_deposit"):
+        jumlah_topup = st.number_input("Masukkan Jumlah Uang (Rp)", min_value=0, step=1000)
+        
+        col_cek, col_konfirm = st.columns([1, 1])
+        
+        with col_cek:
+            cek = st.form_submit_button("🔍 Cek Nominal")
+            
+        with col_konfirm:
+            submit = st.form_submit_button("✅ Konfirmasi")
+        
+        if cek:
+            if jumlah_topup < 1000:
+                st.warning("⚠️ Minimal deposit Rp 1.000")
+            elif jumlah_topup > 100000:
+                st.error("❌ Maksimal deposit Rp 100.000!")
+            else:
+                st.info(f"🆗 Nominal {format_rupiah(jumlah_topup)} Valid! Silakan Konfirmasi.")
+
+        if submit:
+            if jumlah_topup < 1000:
+                st.error("Gagal! Minimal Rp 1.000")
+            elif jumlah_topup > 100000:
+                st.error("Gagal! Maksimal Rp 100.000")
+            else:
+                st.session_state['saldo_user'] += jumlah_topup
+                st.session_state['deposit_mode'] = False 
+                st.success(f"Berhasil deposit {format_rupiah(jumlah_topup)}!")
+                time.sleep(1)
+                st.rerun() 
+            
+    if st.button("Batal"):
+        st.session_state['deposit_mode'] = False
+        st.rerun()
+
+# --- FUNGSI: ANIMASI SLOT BERGULIR ---
+def animasikan_slot(box1, box2, box3, h1, h2, h3, symbols):
+    # Tahap 1: Semua berputar
+    for _ in range(3): 
+        box1.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        time.sleep(0.1)
+
+    # Tahap 2: Kiri Stop
+    box1.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{h1}</h1>", unsafe_allow_html=True)
+    for _ in range(2):
+        box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        time.sleep(0.2)
+
+    # Tahap 3: Tengah Stop
+    box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{h2}</h1>", unsafe_allow_html=True)
+    for _ in range(2):
+        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        time.sleep(0.2)
+
+    # Tahap 4: Kanan Stop
+    box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{h3}</h1>", unsafe_allow_html=True)
+    time.sleep(0.1)
+
+# --- FUNGSI: HALAMAN GAME SLOT ---
+def game_page():
+    st.title("SAWIT MANIS")
+    
+    if st.button("⬅️ Kembali ke Menu"):
+        st.session_state['current_page'] = "dashboard"
+        st.rerun()
+    
+    st.divider()
+
+    col_kiri, col_tengah, col_kanan = st.columns([1, 2, 1])
+    
+    with col_tengah:
+        with st.container(border=True):
+            st.markdown("<h3 style='text-align: center; color: gold;'>SAWIT MANIS</h3>", unsafe_allow_html=True)
+            
+            # INFO TIER HADIAH
+            st.info(f"Biaya Spin: {format_rupiah(1000)}")
+            st.caption("Hadiah: 🌴 20k | 💎7️⃣ 5k | 💰🚛 2.5k | 🍒 1.5k")
+            
+            info_status = st.empty() 
+            
+            slot1, slot2, slot3 = st.columns(3)
+            symbols = ["🌴", "🍒", "💰", "🚛", "💎", "7️⃣"]
+            
+            if 'slot_result' not in st.session_state:
+                st.session_state['slot_result'] = ["❓", "❓", "❓"]
+            
+            with slot1:
+                box1 = st.empty()
+                box1.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{st.session_state['slot_result'][0]}</h1>", unsafe_allow_html=True)
+            with slot2:
+                box2 = st.empty()
+                box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{st.session_state['slot_result'][1]}</h1>", unsafe_allow_html=True)
+            with slot3:
+                box3 = st.empty()
+                box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{st.session_state['slot_result'][2]}</h1>", unsafe_allow_html=True)
+            
+            st.write("") 
+            
+            biaya_spin = 1000
+            
+            # --- PERBAIKAN DI SINI: Inisialisasi auto_spin default ---
+            # Ini mencegah error UnboundLocalError saat masuk ke blok 'if saldo kurang'
+            auto_spin = False 
+            
+            if st.session_state['saldo_user'] < biaya_spin:
+                st.error(f"Saldo Kurang! Min {format_rupiah(biaya_spin)}")
+                if st.button("Isi Saldo Sekarang"):
+                    st.session_state['current_page'] = "dashboard"
+                    st.session_state['deposit_mode'] = True
+                    st.rerun()
+            else:
+                auto_spin = st.checkbox("🔄 Auto Spin (10x Putaran)")
+                
+                if auto_spin:
+                    if st.button("MULAI AUTO SPIN 🚀", type="primary"):
+                        for i in range(10, 0, -1):
+                            info_status.warning(f"⏳ **Spin ke-{i}** sedang berjalan...")
+                            
+                            if st.session_state['saldo_user'] < biaya_spin:
+                                st.toast("Saldo habis saat Auto Spin!")
+                                break
+                            
+                            st.session_state['saldo_user'] -= biaya_spin
+                            
+                            h1, h2, h3 = random.choice(symbols), random.choice(symbols), random.choice(symbols)
+                            st.session_state['slot_result'] = [h1, h2, h3]
+                            
+                            animasikan_slot(box1, box2, box3, h1, h2, h3, symbols)
+                            
+                            # LOGIKA MENANG TIER
+                            if h1 == h2 == h3:
+                                hadiah = hitung_kemenangan(h1)
+                                st.session_state['saldo_user'] += hadiah
+                                
+                                if h1 == "🌴":
+                                    st.balloons() # Efek khusus jackpot
+                                    st.toast(f"GRAND JACKPOT! +{format_rupiah(hadiah)}")
+                                else:
+                                    st.toast(f"WIN! +{format_rupiah(hadiah)}")
+                            
+                        st.rerun()
+
+                else:
+                    if st.button("SPIN", type="primary"):
+                        st.session_state['saldo_user'] -= biaya_spin
+                        
+                        h1 = random.choice(symbols)
+                        h2 = random.choice(symbols)
+                        h3 = random.choice(symbols)
+                        st.session_state['slot_result'] = [h1, h2, h3]
+                        
+                        animasikan_slot(box1, box2, box3, h1, h2, h3, symbols)
+                        
+                        # LOGIKA MENANG TIER (MANUAL)
+                        if h1 == h2 == h3:
+                            hadiah = hitung_kemenangan(h1)
+                            st.session_state['saldo_user'] += hadiah
+                            st.session_state['pesan_menang'] = True
+                            st.session_state['jumlah_menang'] = hadiah # Simpan jumlah buat ditampilkan
+                        else:
+                            st.session_state['pesan_menang'] = False
+                        st.rerun()
+
+        # Menampilkan pesan kemenangan (Sekarang aman karena auto_spin sudah didefinisikan di awal)
+        if 'pesan_menang' in st.session_state and not auto_spin:
+            r = st.session_state['slot_result']
+            jml = st.session_state.get('jumlah_menang', 0)
+            
+            if st.session_state['pesan_menang']:
+                if r[0] == "🌴":
+                    st.balloons()
+                    st.success(f"🔥 GRAND JACKPOT SAWIT! {r[0]}{r[0]}{r[0]} | Saldo +{format_rupiah(jml)}")
+                else:
+                    st.success(f"SELAMAT! {r[0]}{r[0]}{r[0]} | Saldo +{format_rupiah(jml)}")
+                    
+                del st.session_state['pesan_menang']
+            elif r[0] != "❓":
+                st.warning("Coba lagi gan.")
+
+# --- FUNGSI: HALAMAN LOGIN ---
+def login_page():
+    st.markdown('<h1 class="judul-login">DAFTAR SEKARANG!</h1>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
@@ -36,49 +245,53 @@ def login_page():
             password = st.text_input("Password", type="password", placeholder="Masukkan password anda")
             
             if st.button("Masuk"):
-                # Validasi Input
                 if not username or not password:
-                    st.error("Kamu belum memasukkan nama atau password!")
+                    st.error("Isi semua data!")
                 elif len(password) < 8:
-                    st.error("Password terlalu pendek! Minimal 8 karakter.")
+                    st.error("Password minimal 8 karakter.")
                 elif not any(char.isdigit() for char in password):
-                    st.error("Password harus mengandung setidaknya satu angka!")
+                    st.error("Password harus ada angka.")
                 else:
-                    # --- BAGIAN PENTING: MENYIMPAN DATA ---
                     st.success("Login Berhasil!")
                     st.session_state['status_login'] = True
-                    st.session_state['nama_user'] = username # Simpan nama input ke memori
+                    st.session_state['nama_user'] = username
+                    st.session_state['saldo_user'] = 0 
+                    st.session_state['current_page'] = "dashboard"
                     st.rerun()
 
-# --- HALAMAN UTAMA (SAWIT TOTO) ---
-def main_page():
-    # Ambil nama yang tersimpan di memori
+# --- FUNGSI: SIDEBAR USER ---
+def sidebar_menu():
     nama_aktif = st.session_state['nama_user']
+    saldo_aktif = st.session_state['saldo_user']
     
-    # --- SIDEBAR (INFO PENGGUNA DINAMIS) ---
     with st.sidebar:
         st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100)
-        
-        # TAMPILKAN NAMA DARI INPUT USER
-        st.title(nama_aktif.upper()) # Ubah jadi huruf besar semua
+        st.title(nama_aktif.upper())
         st.write("**Status:** Member Baru")
-        
         st.divider()
-        
-        st.metric(label="Saldo Dompet", value="Rp 0", delta="Belum Deposit")
-        
+        st.metric(label="Saldo Dompet", value=format_rupiah(saldo_aktif))
         st.divider()
-        st.button("Deposit")
+        if st.button("Deposit Sekarang"):
+            st.session_state['deposit_mode'] = True
+            st.rerun()  
         st.button("Riwayat Penarikan")
-        
         if st.button("Log Out", type="primary"):
             st.session_state['status_login'] = False
-            st.session_state['nama_user'] = "" # Kosongkan nama saat logout
+            st.session_state['nama_user'] = ""
+            st.session_state['saldo_user'] = 0
             st.rerun()
 
-    # --- KONTEN UTAMA ---
+# --- FUNGSI: HALAMAN UTAMA (DASHBOARD) ---
+def main_page():
+    sidebar_menu()
+    
+    if st.session_state['deposit_mode']:
+        deposit_interface()
+        st.divider()
+    
+    nama_aktif = st.session_state['nama_user']
     st.title("🌴 SAWIT TOTO")
-    st.caption(f"Selamat datang, {nama_aktif}! Jangan Asal Pilih Sawit!")
+    st.caption(f"Halo {nama_aktif}, Saldo Anda: {format_rupiah(st.session_state['saldo_user'])}")
 
     col1, col2, col3 = st.columns(3)
     cols = [col1, col2, col3]
@@ -89,13 +302,23 @@ def main_page():
                 st.image(item["img"], use_container_width=True)
                 st.subheader(item["nama"])
                 st.info(f"Ways: {item['ways']}")
-                if st.button(f"Pilih {item['nama']}", key=f"btn_{i}"):  
-                    st.toast(f"{nama_aktif} memilih: {item['nama']}")
+                
+                if item['nama'] == "Sawit Manis":
+                    if st.button(f"Main {item['nama']}", key=f"btn_{i}"):
+                        st.session_state['current_page'] = "game"
+                        st.rerun()
+                else:
+                    if st.button(f"Pilih {item['nama']}", key=f"btn_{i}"):  
+                        st.toast(f"Menu ini belum tersedia.")
 
     st.divider()
 
-# --- LOGIKA KONTROL UTAMA ---
+# --- LOGIKA KONTROL NAVIGASI ---
 if st.session_state['status_login'] == False:
     login_page()
 else:
-    main_page()
+    if st.session_state['current_page'] == "dashboard":
+        main_page()
+    elif st.session_state['current_page'] == "game":
+        sidebar_menu() 
+        game_page()

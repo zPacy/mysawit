@@ -62,5 +62,25 @@ def load_css():
         footer {visibility: hidden;}
         
         /* CATATAN: Saya TIDAK menyembunyikan 'header' agar tombol sidebar tetap aman */
+
+        /* --- 7. MENGHILANGKAN IKON RANTAI (ANCHOR) --- */
+/* Menghilangkan elemen anchor secara spesifik menggunakan selektor atribut */
+[data-testid="stHeaderActionElements"], 
+.st-emotion-cache-15zrgzn, 
+a.header-anchor {
+    display: none !important;
+}
+
+/* Menggunakan global selector untuk menyembunyikan semua link di dalam heading */
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    display: none !important;
+}
+
+/* Tambahan: Menghilangkan padding berlebih agar judul tetap di tengah */
+[data-testid="stMarkdownContainer"] h1, 
+[data-testid="stMarkdownContainer"] h2, 
+[data-testid="stMarkdownContainer"] h3 {
+    padding-top: 0px !important;
+}
         </style>
     """, unsafe_allow_html=True)
