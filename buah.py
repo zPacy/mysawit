@@ -37,6 +37,20 @@ if 'deposit_mode' not in st.session_state:
 def format_rupiah(angka):
     return f"Rp {angka:,.0f}".replace(",", ".")
 
+# --- CONFIG PROBABILITAS (WEIGHTED RNG) ---
+# Daftar Simbol
+symbols = ["🌴", "🍒", "💰", "🚛", "💎", "7️⃣"]
+
+# Bobot Kemunculan (Total 100 biar gampang hitung)
+# 🌴 (22%)^3 ≈ 1% Chance (1 in 100) -> Target Jackpot
+# 🍒 (46%)^3 ≈ 10% Chance (1 in 10) -> Target Hadiah Kecil
+# Sisanya (8%)^3 ≈ Sangat Kecil (Zonk / Penambah Variasi)
+weights = [22, 46, 8, 8, 8, 8] 
+
+def acak_simbol():
+    """Mengambil 1 simbol berdasarkan bobot probabilitas"""
+    return random.choices(symbols, weights=weights, k=1)[0]
+
 # --- FUNGSI: HITUNG HADIAH (SISTEM TIER) ---
 def hitung_kemenangan(simbol):
     if simbol == "🌴":
@@ -88,25 +102,25 @@ def deposit_interface():
         st.rerun()
 
 # --- FUNGSI: ANIMASI SLOT BERGULIR ---
-def animasikan_slot(box1, box2, box3, h1, h2, h3, symbols):
-    # Tahap 1: Semua berputar
+def animasikan_slot(box1, box2, box3, h1, h2, h3):
+    # Tahap 1: Semua berputar (Gunakan acak_simbol agar visualnya merepresentasikan peluang juga)
     for _ in range(3): 
-        box1.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
-        box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
-        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        box1.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{acak_simbol()}</h1>", unsafe_allow_html=True)
+        box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{acak_simbol()}</h1>", unsafe_allow_html=True)
+        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{acak_simbol()}</h1>", unsafe_allow_html=True)
         time.sleep(0.1)
 
     # Tahap 2: Kiri Stop
     box1.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{h1}</h1>", unsafe_allow_html=True)
     for _ in range(2):
-        box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
-        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{acak_simbol()}</h1>", unsafe_allow_html=True)
+        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{acak_simbol()}</h1>", unsafe_allow_html=True)
         time.sleep(0.2)
 
     # Tahap 3: Tengah Stop
     box2.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{h2}</h1>", unsafe_allow_html=True)
     for _ in range(2):
-        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{random.choice(symbols)}</h1>", unsafe_allow_html=True)
+        box3.markdown(f"<h1 style='text-align: center; font-size: 50px;'>{acak_simbol()}</h1>", unsafe_allow_html=True)
         time.sleep(0.2)
 
     # Tahap 4: Kanan Stop
@@ -131,12 +145,11 @@ def game_page():
             
             # INFO TIER HADIAH
             st.info(f"Biaya Spin: {format_rupiah(1000)}")
-            st.caption("Hadiah: 🌴 20k | 💎7️⃣ 5k | 💰🚛 2.5k | 🍒 1.5k")
+            st.caption("Chance: 🌴 Jackpot (1%) | 🍒 Small (10%)")
             
             info_status = st.empty() 
             
             slot1, slot2, slot3 = st.columns(3)
-            symbols = ["🌴", "🍒", "💰", "🚛", "💎", "7️⃣"]
             
             if 'slot_result' not in st.session_state:
                 st.session_state['slot_result'] = ["❓", "❓", "❓"]
@@ -154,9 +167,7 @@ def game_page():
             st.write("") 
             
             biaya_spin = 1000
-            
-            # --- PERBAIKAN DI SINI: Inisialisasi auto_spin default ---
-            # Ini mencegah error UnboundLocalError saat masuk ke blok 'if saldo kurang'
+            # FIX: Inisialisasi auto_spin
             auto_spin = False 
             
             if st.session_state['saldo_user'] < biaya_spin:
@@ -179,18 +190,21 @@ def game_page():
                             
                             st.session_state['saldo_user'] -= biaya_spin
                             
-                            h1, h2, h3 = random.choice(symbols), random.choice(symbols), random.choice(symbols)
+                            # GENERATE HASIL DENGAN BOBOT
+                            h1 = acak_simbol()
+                            h2 = acak_simbol()
+                            h3 = acak_simbol()
                             st.session_state['slot_result'] = [h1, h2, h3]
                             
-                            animasikan_slot(box1, box2, box3, h1, h2, h3, symbols)
+                            animasikan_slot(box1, box2, box3, h1, h2, h3)
                             
-                            # LOGIKA MENANG TIER
+                            # LOGIKA MENANG
                             if h1 == h2 == h3:
                                 hadiah = hitung_kemenangan(h1)
                                 st.session_state['saldo_user'] += hadiah
                                 
                                 if h1 == "🌴":
-                                    st.balloons() # Efek khusus jackpot
+                                    st.balloons()
                                     st.toast(f"GRAND JACKPOT! +{format_rupiah(hadiah)}")
                                 else:
                                     st.toast(f"WIN! +{format_rupiah(hadiah)}")
@@ -201,24 +215,24 @@ def game_page():
                     if st.button("SPIN", type="primary"):
                         st.session_state['saldo_user'] -= biaya_spin
                         
-                        h1 = random.choice(symbols)
-                        h2 = random.choice(symbols)
-                        h3 = random.choice(symbols)
+                        # GENERATE HASIL DENGAN BOBOT
+                        h1 = acak_simbol()
+                        h2 = acak_simbol()
+                        h3 = acak_simbol()
                         st.session_state['slot_result'] = [h1, h2, h3]
                         
-                        animasikan_slot(box1, box2, box3, h1, h2, h3, symbols)
+                        animasikan_slot(box1, box2, box3, h1, h2, h3)
                         
-                        # LOGIKA MENANG TIER (MANUAL)
+                        # LOGIKA MENANG
                         if h1 == h2 == h3:
                             hadiah = hitung_kemenangan(h1)
                             st.session_state['saldo_user'] += hadiah
                             st.session_state['pesan_menang'] = True
-                            st.session_state['jumlah_menang'] = hadiah # Simpan jumlah buat ditampilkan
+                            st.session_state['jumlah_menang'] = hadiah
                         else:
                             st.session_state['pesan_menang'] = False
                         st.rerun()
 
-        # Menampilkan pesan kemenangan (Sekarang aman karena auto_spin sudah didefinisikan di awal)
         if 'pesan_menang' in st.session_state and not auto_spin:
             r = st.session_state['slot_result']
             jml = st.session_state.get('jumlah_menang', 0)
@@ -304,7 +318,7 @@ def main_page():
                 st.info(f"Ways: {item['ways']}")
                 
                 if item['nama'] == "Sawit Manis":
-                    if st.button(f"Main {item['nama']}", key=f"btn_{i}"):
+                    if st.button(f"MAIN {item['nama']}", key=f"btn_{i}"):
                         st.session_state['current_page'] = "game"
                         st.rerun()
                 else:
